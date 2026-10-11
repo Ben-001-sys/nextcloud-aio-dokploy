@@ -12,8 +12,8 @@ The mastercontainer requires the fixed container name and named volume. It also 
 
 1. **Use a new domain** (for example, `aio.example.com`) with an A record pointing to the host. Never reuse `nextcloud-ben.benuel.dedyn.io`.
 2. Check that no AIO installation already exists on this Docker engine using `docker ps -a --filter name=nextcloud-aio`. The normal fixed naming convention prevents running two independent AIO mastercontainers on one Docker engine. Multiple AIO installations require a supported separate-VM/rootless-Docker approach.
-3. Verify `dokploy-network` exists, and `dokploy-traefik` belongs to it: `docker network inspect dokploy-network`.
-4. Check that ports 8080, 11000 and the chosen Talk port (default example: 3479) are not occupied. The AIO admin UI and Apache published ports bind to host loopback; optional Talk services can require externally reachable ports.
+3. Verify `dokploy-network` exists, `dokploy-traefik` belongs to it, and the network is attachable for AIO's standalone Apache child: `docker network inspect dokploy-network --format 'driver={{.Driver}} scope={{.Scope}} attachable={{.Attachable}}'`. If `attachable=false`, stop and revise the networking approach before starting AIO.
+4. Check that ports 8080, 11000 and the chosen Talk port (default example: 3479) are not occupied. Only the AIO admin UI port 8080 is bound to host loopback. The AIO Apache port 11000 is configured with `APACHE_IP_BINDING=0.0.0.0` so Traefik can reach it through the shared Docker network; restrict **public inbound TCP 11000** using the VPS provider or upstream firewall. Docker-published ports may bypass some host firewall rules. Optional Talk services can require externally reachable ports.
 5. Confirm CPU, RAM, storage, backups, firewall, and SSH access are sufficient before deployment. Optional services increase resource requirements.
 
 ## Deploy AIO mastercontainer
