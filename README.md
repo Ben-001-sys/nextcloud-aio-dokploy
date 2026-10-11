@@ -1,3 +1,7 @@
+> **Current shared Dokploy testing setup (October 2026):** Use [`compose.dokploy.yaml`](compose.dokploy.yaml) — **not** the rootless `compose.yaml` described below. Deploy **one** AIO mastercontainer using Dokploy's existing Docker engine. The [single-instance Traefik example](traefik/nextcloud-aio-dokploy.example.yml) is a separate configuration that must be installed into the actual Traefik dynamic directory; merely committing it has no effect. Keep all existing Nextcloud containers, domains and volumes untouched. This approach grants AIO access to the host Docker API and is appropriate only for approved testing on a shared host. AIO's initial admin page is bound to `127.0.0.1:8080` and needs an SSH tunnel. The public hostname must have its own DNS A record, and public inbound TCP 11000 should be blocked at the upstream firewall. Configure the AIO hostname and Traefik routing before attempting AIO domain validation.
+
+---
+
 # Nextcloud AIO: Two rootless Docker engines on one VPS
 
 This project deploys two **independent Nextcloud AIO instances** under separate rootless Docker engines on one Linux VPS. It does **not** deploy both AIO instances under the same Docker engine or Dokploy Compose service. Existing rootful Dokploy, Traefik and regular Nextcloud installations remain running.
