@@ -1,0 +1,40 @@
+# EXAMPLE: copy into Dokploy Traefik's verified dynamic-config directory.
+# Replace aio.example.com with a NEW domain, not nextcloud-ben.benuel.dedyn.io.
+# Confirm the AIO Apache container joins dokploy-network.
+http:
+  routers:
+    nextcloud-aio-web:
+      rule: "Host(`aio.example.com`)"
+      entryPoints:
+        - web
+      service: nextcloud-aio-service
+      middlewares:
+        - nextcloud-aio-https-redirect
+    nextcloud-aio-websecure:
+      rule: "Host(`aio.example.com`)"
+      entryPoints:
+        - websecure
+      service: nextcloud-aio-service
+      middlewares:
+        - nextcloud-aio-headers
+      tls:
+        certResolver: letsencrypt
+  services:
+    nextcloud-aio-service:
+      loadBalancer:
+        servers:
+          - url: "http://nextcloud-aio-apache:11000"
+  middlewares:
+    nextcloud-aio-https-redirect:
+      redirectScheme:
+        scheme: https
+    nextcloud-aio-headers:
+      headers:
+        hostsProxyHeaders:
+          - X-Forwarded-Host
+        referrerPolicy: same-origin
+        customRequestHeaders:
+          X-Forwarded-Proto: https
+        stsSeconds: 15552000
+        stsIncludeSubdomains: false
+        stsPreload: false
