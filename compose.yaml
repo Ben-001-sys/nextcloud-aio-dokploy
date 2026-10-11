@@ -1,7 +1,6 @@
-# Nextcloud All-in-One behind the existing Dokploy/Traefik reverse proxy.
-# AIO manages its own sibling containers through the Docker API.
-# WARNING: This is for a separate experiment and does not replace the existing Nextcloud.
-# See README.md for required DNS, reverse proxy, and host safety checks.
+# Use this file separately with TWO INDEPENDENT ROOTLESS DOCKER ENGINES.
+# DO NOT deploy with Dokploy's system/rootful Docker engine.
+# Each account has its own rootless Docker daemon and own .env file.
 name: nextcloud-aio
 
 services:
@@ -10,22 +9,22 @@ services:
     container_name: nextcloud-aio-mastercontainer
     init: true
     restart: always
-    network_mode: bridge
     ports:
-      # Access only through a trusted SSH tunnel.
-      - "127.0.0.1:8080:8080"
+      # Rootless-engine management UI; access using an SSH tunnel only.
+      - "127.0.0.1:${AIO_ADMIN_PORT:?Set_AIO_ADMIN_PORT}:8080"
     environment:
-      APACHE_PORT: "11000"
-      # Required when Traefik connects over dokploy-network rather than localhost.
-      # WARNING: Restrict public access to TCP 11000 at the upstream firewall.
+      # Unique host port per rootless instance for the AIO Apache container.
+      APACHE_PORT: "${AIO_APACHE_PORT:?Set_AIO_APACHE_PORT}"
+      # Reverse proxy in system Docker connects through a host-reachable IP.
+      # Block unsolicited public inbound traffic to the Apache ports.
       APACHE_IP_BINDING: "0.0.0.0"
-      APACHE_ADDITIONAL_NETWORK: "dokploy-network"
-      SKIP_DOMAIN_VALIDATION: "false"
-      TALK_PORT: "${AIO_TALK_PORT:-3479}"
+      TALK_PORT: "${AIO_TALK_PORT:?Set_AIO_TALK_PORT}"
+      # Required by AIO when its Docker daemon/socket is rootless.
+      WATCHTOWER_DOCKER_SOCKET_PATH: "${XDG_RUNTIME_DIR:?Login_as_rootless_user}/docker.sock"
     volumes:
       - nextcloud_aio_mastercontainer:/mnt/docker-aio-config
-      # AIO requires highly privileged access to manage Docker containers.
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # This is the CURRENT USER's rootless daemon, NEVER /var/run/docker.sock.
+      - "${XDG_RUNTIME_DIR:?Login_as_rootless_user}/docker.sock:/var/run/docker.sock:ro"
 
 volumes:
   nextcloud_aio_mastercontainer:
