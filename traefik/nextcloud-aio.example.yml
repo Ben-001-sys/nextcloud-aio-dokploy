@@ -1,40 +1,50 @@
-# EXAMPLE: copy into Dokploy Traefik's verified dynamic-config directory.
-# Replace aio.example.com with a NEW domain, not nextcloud-ben.benuel.dedyn.io.
-# Confirm the AIO Apache container joins dokploy-network.
+# Example only: mount to Dokploy Traefik's actual dynamic config directory
+# after replacing both hostnames and HOST_IP_REACHABLE_FROM_TRAEFIK.
+# AIO Apache runs on TWO DIFFERENT ROOTLESS DOCKER ENGINES, not dokploy-network.
+# Do not install unmodified. Never duplicate an existing Traefik router name.
 http:
   routers:
-    nextcloud-aio-web:
-      rule: "Host(`aio.example.com`)"
-      entryPoints:
-        - web
-      service: nextcloud-aio-service
-      middlewares:
-        - nextcloud-aio-https-redirect
-    nextcloud-aio-websecure:
-      rule: "Host(`aio.example.com`)"
-      entryPoints:
-        - websecure
-      service: nextcloud-aio-service
-      middlewares:
-        - nextcloud-aio-headers
+    aio-ben-http:
+      rule: "Host(`aio-ben.example.com`)"
+      entryPoints: [web]
+      middlewares: [aio-https-redirect]
+      service: aio-ben-service
+    aio-ben-https:
+      rule: "Host(`aio-ben.example.com`)"
+      entryPoints: [websecure]
+      service: aio-ben-service
+      middlewares: [aio-hsts]
+      tls:
+        certResolver: letsencrypt
+    aio-colleague-http:
+      rule: "Host(`aio-colleague.example.com`)"
+      entryPoints: [web]
+      middlewares: [aio-https-redirect]
+      service: aio-colleague-service
+    aio-colleague-https:
+      rule: "Host(`aio-colleague.example.com`)"
+      entryPoints: [websecure]
+      service: aio-colleague-service
+      middlewares: [aio-hsts]
       tls:
         certResolver: letsencrypt
   services:
-    nextcloud-aio-service:
+    aio-ben-service:
       loadBalancer:
         servers:
-          - url: "http://nextcloud-aio-apache:11000"
+          - url: "http://HOST_IP_REACHABLE_FROM_TRAEFIK:11000"
+    aio-colleague-service:
+      loadBalancer:
+        servers:
+          - url: "http://HOST_IP_REACHABLE_FROM_TRAEFIK:11001"
   middlewares:
-    nextcloud-aio-https-redirect:
+    aio-https-redirect:
       redirectScheme:
         scheme: https
-    nextcloud-aio-headers:
+    aio-hsts:
       headers:
-        hostsProxyHeaders:
-          - X-Forwarded-Host
-        referrerPolicy: same-origin
-        customRequestHeaders:
-          X-Forwarded-Proto: https
         stsSeconds: 15552000
         stsIncludeSubdomains: false
         stsPreload: false
+        customRequestHeaders:
+          X-Forwarded-Proto: https
