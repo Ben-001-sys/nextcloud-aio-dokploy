@@ -1,0 +1,31 @@
+# SINGLE shared AIO testing instance on Dokploy's EXISTING system Docker engine.
+# Do NOT use the rootless-oriented compose.yaml for this deployment.
+# This AIO mastercontainer controls Docker via /var/run/docker.sock.
+# Use only after the existing Nextcloud backups and port checks are complete.
+name: nextcloud-aio
+
+services:
+  nextcloud-aio-mastercontainer:
+    image: ghcr.io/nextcloud-releases/all-in-one:latest
+    container_name: nextcloud-aio-mastercontainer
+    init: true
+    restart: always
+    network_mode: bridge
+    ports:
+      # AIO administrative UI: localhost only, reach via SSH tunnel.
+      - "127.0.0.1:8080:8080"
+    environment:
+      APACHE_PORT: "11000"
+      # Traefik accesses the AIO-created Apache container on dokploy-network.
+      APACHE_IP_BINDING: "0.0.0.0"
+      APACHE_ADDITIONAL_NETWORK: "dokploy-network"
+      SKIP_DOMAIN_VALIDATION: "false"
+      TALK_PORT: "${AIO_TALK_PORT:-3479}"
+    volumes:
+      - nextcloud_aio_mastercontainer:/mnt/docker-aio-config
+      # Grants AIO extensive control of the HOST Docker daemon.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+volumes:
+  nextcloud_aio_mastercontainer:
+    name: nextcloud_aio_mastercontainer
