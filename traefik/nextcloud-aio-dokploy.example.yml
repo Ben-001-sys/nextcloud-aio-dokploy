@@ -1,0 +1,33 @@
+# EXAMPLE for the SINGLE shared AIO instance, deployed on Dokploy's Docker engine.
+# This file is NOT automatically applied by GitHub/Dokploy.
+# Copy into Traefik's verified, mounted dynamic-config directory after updating the DNS hostname.
+# DNS for the example domain must point at the VPS.
+http:
+  routers:
+    aio-shared-http:
+      rule: "Host(`nextcloud-aio.benuel.dedyn.io`)"
+      entryPoints: [web]
+      middlewares: [aio-shared-redirect]
+      service: aio-shared-service
+    aio-shared-https:
+      rule: "Host(`nextcloud-aio.benuel.dedyn.io`)"
+      entryPoints: [websecure]
+      service: aio-shared-service
+      middlewares: [aio-shared-proxy-headers]
+      tls:
+        certResolver: letsencrypt
+  services:
+    aio-shared-service:
+      loadBalancer:
+        servers:
+          - url: "http://nextcloud-aio-apache:11000"
+  middlewares:
+    aio-shared-redirect:
+      redirectScheme:
+        scheme: https
+    aio-shared-proxy-headers:
+      headers:
+        hostsProxyHeaders:
+          - X-Forwarded-Host
+        customRequestHeaders:
+          X-Forwarded-Proto: https
